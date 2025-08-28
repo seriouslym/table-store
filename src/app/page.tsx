@@ -1,103 +1,238 @@
-import Image from "next/image";
+'use client'
+import { RootState } from "@/store"
+import { useSelector } from "react-redux"
+import Empty from "@/components/empty"
+import { Label } from "@/components/ui/label"
+import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Rows2 } from 'lucide-react';
+import { Separator } from "@/components/ui/separator"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Input } from "@/components/ui/input"
+import { Form, FormControl, FormField, FormItem } from "@/components/ui/form"
+import { toast } from 'sonner'
+import { useForm } from "react-hook-form"
+import { debounce, getItemFromLocalStorage } from "@/lib/utils"
+import { useCallback } from 'react'
+import { LoginInfo } from "./api/type"
+type PrimaryKey = {
+  name: string,
+  type: string
+}
+
 
 export default function Home() {
+  const [dataCopy, setDataCopy] = useState<{ key: string, value: string, type: string }[]>([])
+  const tableName = useSelector((state: RootState) => state.tableNameState)
+  const instanceName = useSelector((state: RootState) => state.instanceNameState)
+  const [basicInfo, setBasicInfo] = useState([] as PrimaryKey[])
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [data, setData] = useState([] as { key: string, value: string, type: string }[])
+  const form = useForm()
+  const loginInfo = getItemFromLocalStorage('data') as LoginInfo
+  const handleFormSubmit = async (data: any) => {
+    const result = await fetch("/api/table/row", {
+      method: 'POST',
+      body: JSON.stringify({
+        ...loginInfo,
+        instanceName,
+        tableName,
+        primaryKeys: data
+      })
+    }).catch(err => {
+      console.log('ots row', err)
+    })
+    setIsDialogOpen(!isDialogOpen)
+    toast.success("读取成功", {
+      position: 'top-center'
+    })
+    if (result) {
+      const row = await result.json() as any
+      const attributes = (row?.attributes || []).map((each: { columnName: string; columnValue: string }) => ({ key: each.columnName, value: each.columnValue, type: typeof each.columnValue }))
+      setDataCopy(attributes)
+      setData(attributes)
+    }
+  }
+  const handleOpenDialog = () => {
+    if (!tableName) {
+      toast.error("请先选择表", {
+        position: 'top-center'
+      })
+      return
+    }
+    setIsDialogOpen(!isDialogOpen)
+  }
+  const filterAttribute = useCallback(
+    debounce((e: any) => {
+      const filter = e.target.value
+      if (filter) {
+        setData(dataCopy.filter(each => each.key.startsWith(filter)))
+      } else {
+        setData(dataCopy)
+      }
+    }, 500),
+    [dataCopy]
+  )
+  useEffect(() => {
+    if (tableName && instanceName) {
+      fetch("/api/table/desc", {
+        method: "post",
+        body: JSON.stringify({
+          ...loginInfo,
+          instanceName,
+          tableName
+        })
+      }).then(async res => {
+        const data = await res.json()
+        const primaryKey = data?.tableMeta?.primaryKey as PrimaryKey[]
+        setBasicInfo(primaryKey ?? [])
+        const defaultValues: Record<string, string> = {}
+        primaryKey.forEach(field => {
+          defaultValues[field.name] = '';
+        });
+        form.reset(defaultValues);
+      })
+    }
+  }, [tableName, instanceName])
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <>
+      <div className="flex flex-1 flex-col p-4 pt-0 pb-8 mx-4">
+        <div className="flex-1 rounded-xl bg-muted/50 md:min-h-min">
+          <div className="">
+            <div className="flex justify-start gap-4 m-4 items-center ">
+              <Dialog open={isDialogOpen} onOpenChange={handleOpenDialog}>
+                <DialogTrigger asChild>
+                  <Button variant='outline' className="w-[96px]">
+                    <Rows2 />
+                    <Label>单行读</Label>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>主键信息</DialogTitle>
+                  </DialogHeader>
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleFormSubmit)}>
+                      <Table className="overflow-hidden" >
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>名称</TableHead>
+                            <TableHead>类型</TableHead>
+                            <TableHead>键值</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody className="overflow-hidden">
+                          {
+                            basicInfo.map(each => {
+                              return <TableRow key={each.name}>
+                                <TableCell>{each.name}</TableCell>
+                                <TableCell>{each.type}</TableCell>
+                                <TableCell>
+                                  <FormItem>
+                                    <FormField control={form.control} name={each.name} render={({ field }) => (
+                                      <FormControl>
+                                        <Input className="w-3/4" {...field} />
+                                      </FormControl>
+                                    )} />
+                                  </FormItem>
+                                </TableCell>
+                              </TableRow>
+                            })
+                          }
+                        </TableBody>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+                      </Table>
+                      <div className="flex justify-center items-center gap-4 mt-4">
+                        <Button type="submit">确定</Button>
+                        <Button variant='outline' type="button" onClick={handleOpenDialog}>取消</Button>
+                      </div>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+              {/* <Button variant='outline' className="w-[96px]">
+                <Rows3/>
+                <Label>批量读</Label>
+              </Button> */}
+              <Input placeholder="过滤属性" className="w-[200px]" onChange={filterAttribute} />
+            </div>
+          </div>
+          <Separator />
+          {
+            data.length ? <div className="h-[700px] overflow-hidden">
+              <TableData data={data} />
+            </div> : <Empty className="h-[calc(95%-36px)]" />
+          }
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+      </div>
+    </>
+  )
 }
+
+
+
+const TableData = ({ data }: { data: { key: string, value: string, type: string }[] }) => {
+  // 确保值总是字符串类型
+  const formatValue = (value: string | null | boolean) => {
+    return '' + value;
+  };
+
+  // 复制功能
+  const copyToClipboard = (text: string) => {
+    toast.success("复制成功", {
+      position: 'top-center'
+    })
+    navigator.clipboard.writeText(text).catch(err => {
+      console.error('复制失败:', err);
+    });
+  };
+
+  return <>
+    <div className="relative h-full">
+      <div className="overflow-hidden h-full">
+        <div className="overflow-y-auto h-full ml-4">
+          <Table>
+            <TableHeader>
+              <TableRow className="">
+                <TableHead className="w-[50px]">属性名</TableHead>
+                <TableHead className="w-[500px]">属性值</TableHead>
+                <TableHead className="w-[150px]">类型</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody >
+              {data.map(each => {
+                const formattedValue = formatValue(each.value);
+                return <TableRow key={each.key} className="group relative">
+                  <TableCell>{each.key}</TableCell>
+                  <TableCell>
+                    <div
+                      className="w-full break-words break-all whitespace-normal"
+                    >
+                      {formattedValue}
+                      <Button
+                        onClick={() => { copyToClipboard(formattedValue) }}
+                        className="h-[30px] absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                        aria-label="复制"
+                        variant='outline'
+                      >
+                        <div className="flex justify-between items-center">
+                          <Label className="text-sm">复制</Label>
+                        </div>
+                      </Button>
+                    </div>
+                  </TableCell>
+                  <TableCell>{each.type}</TableCell>
+                </TableRow>
+              })
+              }
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    </div>
+  </>
+}
+
+
+
