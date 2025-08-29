@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import TableStore from 'tablestore'
-import { LoginInfo } from "../../type"
+import { LoginInfo } from "../../../type"
 
 
 export async function POST(req: Request) {

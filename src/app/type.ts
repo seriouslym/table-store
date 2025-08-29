@@ -5,3 +5,7 @@ export type LoginInfo = {
   instances: string[],
   area: string,
 }
+export type PrimaryKey = {
+  name: string,
+  type: string
+}

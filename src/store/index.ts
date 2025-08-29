@@ -1,3 +1,4 @@
+import { PrimaryKey } from '@/app/type'
 import { getItemFromLocalStorage } from '@/lib/utils'
 import { configureStore, createSlice } from '@reduxjs/toolkit'
 const tableNameSlice = createSlice({
@@ -38,15 +39,31 @@ const instancesSlice = createSlice({
   }
 })
 
+const tableDescSlice = createSlice({
+  name: '表描述',
+  initialState: {} as Record<string, PrimaryKey[]>,
+  reducers: {
+    setTableDesc: (state, action) => {
+      return {
+        ...state,
+        [action.payload.tableName]: action.payload.tableDescs
+      }
+    },
+  }
+})
+
+
 const store = configureStore({
   reducer: {
     tableNameState: tableNameSlice.reducer,
     instanceNameState: instanceNameSlice.reducer,
-    instancesState: instancesSlice.reducer
+    instancesState: instancesSlice.reducer,
+    tableDescState: tableDescSlice.reducer
   }
 })
 export default store
 export const tableNameSliceActions = tableNameSlice.actions
 export const instanceNameSliceActions = instanceNameSlice.actions
 export const instancesSliceActions = instancesSlice.actions
+export const tableDescSliceActions = tableDescSlice.actions
 export type RootState = ReturnType<typeof store.getState>

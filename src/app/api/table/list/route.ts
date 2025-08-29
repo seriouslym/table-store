@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import TableStore from 'tablestore'
-import { LoginInfo } from '@/app/api/type'
+import { LoginInfo } from '@/app/type'
 import Bluebird from 'bluebird'
 
 export async function POST(req: Request) {

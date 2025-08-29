@@ -15,16 +15,14 @@ import { toast } from 'sonner'
 import { useForm } from "react-hook-form"
 import { debounce, getItemFromLocalStorage } from "@/lib/utils"
 import { useCallback } from 'react'
-import { LoginInfo } from "./api/type"
+import { LoginInfo, PrimaryKey } from "./type"
 import _ from "lodash"
-type PrimaryKey = {
-  name: string,
-  type: string
-}
-
-
+import { useDispatch } from "react-redux"
+import { tableDescSliceActions } from "@/store"
 export default function Home() {
+  const dispatch = useDispatch()
   const [dataCopy, setDataCopy] = useState<{ key: string, value: string, type: string }[]>([])
+  const tableDesc = useSelector((state: RootState) => state.tableDescState)
   const tableName = useSelector((state: RootState) => state.tableNameState)
   const instanceName = useSelector((state: RootState) => state.instanceNameState)
   const [basicInfo, setBasicInfo] = useState([] as PrimaryKey[])
@@ -83,6 +81,11 @@ export default function Home() {
   )
   useEffect(() => {
     if (tableName && instanceName) {
+      const key = `${instanceName}-${tableName}`
+      if (tableDesc[key]) {
+        setBasicInfo(tableDesc[key])
+        return
+      }
       fetch("/api/table/desc", {
         method: "post",
         body: JSON.stringify({
@@ -98,6 +101,7 @@ export default function Home() {
         primaryKey.forEach(field => {
           defaultValues[field.name] = '';
         });
+        dispatch(tableDescSliceActions.setTableDesc({ tableName: `${instanceName}-${tableName}`, tableDescs: primaryKey }))
         form.reset(defaultValues);
       })
     }
