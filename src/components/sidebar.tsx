@@ -1,5 +1,5 @@
 'use client'
-import { Home, ChevronRight, PackagePlus, Braces, FileText, Database, Library, Book } from "lucide-react"
+import { Home, ChevronRight, PackagePlus, Braces, FileText, Database, Library, Book, LoaderCircle } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -28,7 +28,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useForm } from "react-hook-form"
 import { Input } from "@/components/ui/input"
-import { Form, FormField, FormItem } from '@/components/ui/form'
+import { Form, FormField } from '@/components/ui/form'
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 
@@ -47,8 +47,8 @@ export function AppSidebar() {
   const tableName = useSelector((state: RootState) => state.tableNameState)
   const sideBarInstances = useSelector((state: RootState) => state.instancesState)
   const [instancesInfo, setInstancesInfo] = useState({} as Record<string, string[]>)
-  console.log('instancesInfo', instancesInfo)
   const [collapsedStates, setCollapsedStates] = useState([] as boolean[])
+  const [isLoading, setIsLoading] = useState(true)
   const toggleCollapse = (idx: number) => {
     setCollapsedStates(prev => {
       const newStates = [...prev]
@@ -103,6 +103,7 @@ export function AppSidebar() {
     fetchData().then(async res => {
       const data = await res.json()
       setInstancesInfo(data)
+      setIsLoading(false)
     })
   }, [sideBarInstances])
   const newInstanceForm = useForm<{ instanceName: string }>({
@@ -114,6 +115,7 @@ export function AppSidebar() {
     <>
       <Sidebar collapsible="icon">
         <SidebarContent>
+
           <SidebarGroup>
             <div className="flex justify-between">
               <SidebarGroupLabel>Table Instances</SidebarGroupLabel>
@@ -158,44 +160,54 @@ export function AppSidebar() {
                 </DialogContent>
               </Dialog>
             </div>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {
-                  Object.entries(instancesInfo).map(([instance, tables], index) => {
-                    const Icon = iconList[index % iconList.length]
-                    return (
-                      <Collapsible key={instance} onOpenChange={() => toggleCollapse(index)} className="group/collapsible" open={collapsedStates[index]}>
-                        <SidebarMenuItem key={instance} >
-                          <CollapsibleTrigger asChild>
-                            <SidebarMenuButton className="relative">
-                              <Icon />
-                              <span>{instance}</span>
-                              <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                            </SidebarMenuButton>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <SidebarMenuSub>
-                              {
-                                tables.map(table => {
-                                  return <SidebarMenuButton key={table}
-                                    isActive={tableName === table}
-                                    onClick={() => {
-                                      dispatch(tableNameSliceActions.changeTableName(table))
-                                      dispatch(instanceNameSliceActions.changeInstanceName(instance))
-                                    }}>
-                                    <span className="">{table}</span>
-                                  </SidebarMenuButton>
-                                })
-                              }
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        </SidebarMenuItem>
-                      </Collapsible>
-                    )
-                  })
-                }
-              </SidebarMenu>
-            </SidebarGroupContent>
+
+            {
+              isLoading ? <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem className="flex justify-center items-center flex-col space-y-2 mt-4">
+                    <LoaderCircle className="animate-spin"></LoaderCircle>
+                    <span>Loading...</span>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent> : <SidebarGroupContent>
+                <SidebarMenu>
+                  {
+                    Object.entries(instancesInfo).map(([instance, tables], index) => {
+                      const Icon = iconList[index % iconList.length]
+                      return (
+                        <Collapsible key={instance} onOpenChange={() => toggleCollapse(index)} className="group/collapsible" open={collapsedStates[index]}>
+                          <SidebarMenuItem key={instance} >
+                            <CollapsibleTrigger asChild>
+                              <SidebarMenuButton className="relative">
+                                <Icon />
+                                <span>{instance}</span>
+                                <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                              </SidebarMenuButton>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <SidebarMenuSub>
+                                {
+                                  tables.map(table => {
+                                    return <SidebarMenuButton key={table}
+                                      isActive={tableName === table}
+                                      onClick={() => {
+                                        dispatch(tableNameSliceActions.changeTableName(table))
+                                        dispatch(instanceNameSliceActions.changeInstanceName(instance))
+                                      }}>
+                                      <span className="">{table}</span>
+                                    </SidebarMenuButton>
+                                  })
+                                }
+                              </SidebarMenuSub>
+                            </CollapsibleContent>
+                          </SidebarMenuItem>
+                        </Collapsible>
+                      )
+                    })
+                  }
+                </SidebarMenu>
+              </SidebarGroupContent>
+            }
           </SidebarGroup>
         </SidebarContent>
       </Sidebar>

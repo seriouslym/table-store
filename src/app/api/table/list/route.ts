@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     (prev as Record<string, TableStore.Client>)[instanceName] = new TableStore.Client({
       accessKeyId: data.keyId,
       secretAccessKey: data.secret,
-      endpoint: `https://${instanceName}.cn-hangzhou.ots.aliyuncs.com`,
+      endpoint: `https://${instanceName}.${data.area}.ots.aliyuncs.com`,
       instancename: instanceName,
       httpOptions: {
         timeout: 2000,

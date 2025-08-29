@@ -8,16 +8,16 @@ export async function POST(req: Request) {
     tableName: string
   }
   const client = new TableStore.Client({
-      accessKeyId: data.keyId,
-      secretAccessKey: data.secret,
-      endpoint: `https://${data.instanceName}.cn-hangzhou.ots.aliyuncs.com`,
-      instancename: data.instanceName,
-      httpOptions: {
-        timeout: 2000,
-        maxSockets: 0,
-      },
-      maxRetries: 0,
-    })
+    accessKeyId: data.keyId,
+    secretAccessKey: data.secret,
+    endpoint: `https://${data.instanceName}.${data.area}.ots.aliyuncs.com`,
+    instancename: data.instanceName,
+    httpOptions: {
+      timeout: 2000,
+      maxSockets: 0,
+    },
+    maxRetries: 0,
+  })
   try {
     const res = await client.describeTable({
       tableName: data.tableName

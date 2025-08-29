@@ -3,4 +3,5 @@ export type LoginInfo = {
   secret: string,
   instanceName: string,
   instances: string[],
+  area: string,
 }

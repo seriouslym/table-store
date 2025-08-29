@@ -16,6 +16,7 @@ import { useForm } from "react-hook-form"
 import { debounce, getItemFromLocalStorage } from "@/lib/utils"
 import { useCallback } from 'react'
 import { LoginInfo } from "./api/type"
+import _ from "lodash"
 type PrimaryKey = {
   name: string,
   type: string
@@ -41,18 +42,24 @@ export default function Home() {
         primaryKeys: data
       })
     }).catch(err => {
-      console.log('ots row', err)
+      toast.error("读取失败", {
+        position: 'top-center'
+      })
     })
-    setIsDialogOpen(!isDialogOpen)
-    toast.success("读取成功", {
-      position: 'top-center'
-    })
-    if (result) {
-      const row = await result.json() as any
+    let row = await result?.json()
+    if (!_.isEmpty(row)) {
+      toast.success("读取成功", {
+        position: 'top-center'
+      })
       const attributes = (row?.attributes || []).map((each: { columnName: string; columnValue: string }) => ({ key: each.columnName, value: each.columnValue, type: typeof each.columnValue }))
       setDataCopy(attributes)
       setData(attributes)
+    } else {
+      toast.error("读取所在行不存在", {
+        position: 'top-center'
+      })
     }
+    setIsDialogOpen(!isDialogOpen)
   }
   const handleOpenDialog = () => {
     if (!tableName) {

@@ -10,7 +10,6 @@ import Login from "./login/page"
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
 
   const isLogin = !!localStorage.getItem('data')
-  console.log('isLogin', isLogin)
   return (
     <Provider store={store}>
       {isLogin ? (
