@@ -1,0 +1,13 @@
+appVersion: v1
+kind: Pod
+metadata:
+  name: table-store-pod
+  labels:
+    app: table-store
+spec:
+  containers:
+    - name: table-store-container
+      image: table-store:latest
+      ports:
+        - containerPort: 3000
+        - hostPort: 8888
