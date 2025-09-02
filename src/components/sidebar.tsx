@@ -59,6 +59,7 @@ export function AppSidebar() {
   const loginInfo = getItemFromLocalStorage('data')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const handleFormSubmit = async (values: any) => {
+    console.log('quxiao')
     if (values.instanceName in instancesInfo) {
       toast.error('实例已存在', {
         position: 'top-center'
@@ -152,7 +153,7 @@ export function AppSidebar() {
                         </div>
                         <div className="flex justify-center space-x-4">
                           <Button type="submit">确定</Button>
-                          <Button variant='outline'>取消</Button>
+                          <Button variant='outline' type="button" onClick={() => setIsDialogOpen(false)}>取消</Button>
                         </div>
                       </div>
                     </form>
