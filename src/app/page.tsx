@@ -31,9 +31,11 @@ export default function Home() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [data, setData] = useState([] as { key: string, value: string, type: string }[])
   const [descLoading, setDescLoading] = useState(false)
+  const [rowLoading, setRowLoading] = useState(false)
   const form = useForm()
   const loginInfo = getItemFromLocalStorage('data') as LoginInfo
   const handleFormSubmit = async (data: any) => {
+    setRowLoading(true)
     const result = await fetch("/api/table/row", {
       method: 'POST',
       body: JSON.stringify({
@@ -61,6 +63,7 @@ export default function Home() {
       })
     }
     setIsDialogOpen(!isDialogOpen)
+    setRowLoading(false)
   }
   const handleOpenDialog = () => {
     if (!tableName) {
@@ -165,7 +168,9 @@ export default function Home() {
 
                           </Table>
                           <div className="flex justify-center items-center gap-4 mt-4">
-                            <Button type="submit">确定</Button>
+                            <Button type="submit">
+                              {rowLoading ? <Loading /> : '确定'}
+                            </Button>
                             <Button variant='outline' type="button" onClick={handleOpenDialog}>取消</Button>
                           </div>
                         </form>
