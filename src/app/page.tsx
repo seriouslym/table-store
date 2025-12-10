@@ -19,6 +19,8 @@ import { LoginInfo, PrimaryKey } from "./type"
 import _ from "lodash"
 import { useDispatch } from "react-redux"
 import { tableDescSliceActions } from "@/store"
+import { resolve } from "path"
+import Loading from "@/components/loading"
 export default function Home() {
   const dispatch = useDispatch()
   const [dataCopy, setDataCopy] = useState<{ key: string, value: string, type: string }[]>([])
@@ -28,6 +30,7 @@ export default function Home() {
   const [basicInfo, setBasicInfo] = useState([] as PrimaryKey[])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [data, setData] = useState([] as { key: string, value: string, type: string }[])
+  const [descLoading, setDescLoading] = useState(false)
   const form = useForm()
   const loginInfo = getItemFromLocalStorage('data') as LoginInfo
   const handleFormSubmit = async (data: any) => {
@@ -84,8 +87,10 @@ export default function Home() {
       const key = `${instanceName}-${tableName}`
       if (tableDesc[key]) {
         setBasicInfo(tableDesc[key])
+        setDescLoading(false)
         return
       }
+      setDescLoading(true)
       fetch("/api/table/desc", {
         method: "post",
         body: JSON.stringify({
@@ -102,6 +107,7 @@ export default function Home() {
           defaultValues[field.name] = '';
         });
         dispatch(tableDescSliceActions.setTableDesc({ tableName: `${instanceName}-${tableName}`, tableDescs: primaryKey }))
+        setDescLoading(false)
         form.reset(defaultValues);
       })
     }
@@ -123,43 +129,48 @@ export default function Home() {
                   <DialogHeader>
                     <DialogTitle>主键信息</DialogTitle>
                   </DialogHeader>
-                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleFormSubmit)}>
-                      <Table className="overflow-hidden" >
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>名称</TableHead>
-                            <TableHead>类型</TableHead>
-                            <TableHead>键值</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody className="overflow-hidden">
-                          {
-                            basicInfo.map(each => {
-                              return <TableRow key={each.name}>
-                                <TableCell>{each.name}</TableCell>
-                                <TableCell>{each.type}</TableCell>
-                                <TableCell>
-                                  <FormItem>
-                                    <FormField control={form.control} name={each.name} render={({ field }) => (
-                                      <FormControl>
-                                        <Input className="w-3/4" {...field} />
-                                      </FormControl>
-                                    )} />
-                                  </FormItem>
-                                </TableCell>
+                  {
+                    descLoading ? <div className="flex justify-center">
+                      <Loading />
+                    </div> :
+                      <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handleFormSubmit)}>
+                          <Table className="overflow-hidden" >
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>名称</TableHead>
+                                <TableHead>类型</TableHead>
+                                <TableHead>键值</TableHead>
                               </TableRow>
-                            })
-                          }
-                        </TableBody>
+                            </TableHeader>
+                            <TableBody className="overflow-hidden">
+                              {
+                                basicInfo.map(each => {
+                                  return <TableRow key={each.name}>
+                                    <TableCell>{each.name}</TableCell>
+                                    <TableCell>{each.type}</TableCell>
+                                    <TableCell>
+                                      <FormItem>
+                                        <FormField control={form.control} name={each.name} render={({ field }) => (
+                                          <FormControl>
+                                            <Input className="w-3/4" {...field} />
+                                          </FormControl>
+                                        )} />
+                                      </FormItem>
+                                    </TableCell>
+                                  </TableRow>
+                                })
+                              }
+                            </TableBody>
 
-                      </Table>
-                      <div className="flex justify-center items-center gap-4 mt-4">
-                        <Button type="submit">确定</Button>
-                        <Button variant='outline' type="button" onClick={handleOpenDialog}>取消</Button>
-                      </div>
-                    </form>
-                  </Form>
+                          </Table>
+                          <div className="flex justify-center items-center gap-4 mt-4">
+                            <Button type="submit">确定</Button>
+                            <Button variant='outline' type="button" onClick={handleOpenDialog}>取消</Button>
+                          </div>
+                        </form>
+                      </Form>
+                  }
                 </DialogContent>
               </Dialog>
               {/* <Button variant='outline' className="w-[96px]">
